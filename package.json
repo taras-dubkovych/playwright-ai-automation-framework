@@ -6,8 +6,10 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "npx ts-node src/index.ts",
-    "lint": "echo \"no lint configured yet\""
+    "test:e2e": "npx playwright test",
+    "ai:bug-reports": "type artifacts/bug-reports.json",
+    "ai:generate-tests": "npx ts-node src/scripts/generateTestsFromFeature.ts",
+    "ai:apply-fix": "npx ts-node src/scripts/applyTestFix.ts"
   },
   "keywords": [],
   "author": "",
