@@ -18,14 +18,14 @@ export class TestGenerator {
     // Тут буде виклик LLM API
     // Наразі повертаємо заглушку
     return `
-// This is a generated test for: ${featureDescription}
-import { test, expect } from '@playwright/test';
+        // This is a generated test for: ${featureDescription}
+        import { test, expect } from '@playwright/test';
 
-test('generated test for ${featureDescription}', async ({ page }) => {
-  // TODO: Implement test steps based on feature description
-  await page.goto('https://www.saucedemo.com/');
-  await expect(page).toHaveTitle(/Swag Labs/);
-});
+        test('generated test for ${featureDescription}', async ({ page }) => {
+        // TODO: Implement test steps based on feature description
+        await page.goto('https://www.saucedemo.com/');
+        await expect(page).toHaveTitle(/Swag Labs/);
+        });
     `;
   }
 }

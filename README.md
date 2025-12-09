@@ -5,7 +5,28 @@ A **TypeScript** + **Playwright** UI test automation framework with:
 - **OOP-based** services and utilities
 - **Logger** for debugging
 - **Playwright** browser automation (Chromium, Firefox)
-- Ready for **AI assistant** integration (test generator, bug report generator)
+- **AI-powered** bug report generation using OpenAI GPT-4o-mini
+- **GitHub Actions CI/CD** pipeline
+
+---
+
+## 🎯 Key Features
+
+### 🤖 AI Integration
+- **Auto-generated bug reports** from failed test runs using OpenAI LLM
+- **AI fixtures** that capture failed test info and generate structured bug reports
+- **Smart JSON parsing** with fallback to mock data
+- Bug reports saved to `artifacts/bug-reports.json`
+
+### 🏗️ Architecture
+- **Page Object Model** for cleaner, maintainable tests
+- **Service-based** business logic layer
+- **Modular structure** with separated concerns (pages, services, models, AI)
+
+### 🚀 CI/CD
+- **GitHub Actions** workflow on push/PR
+- **Automated test execution** with Chromium & Firefox
+- **Artifact uploads** for reports, screenshots, videos, and AI bug reports
 
 ---
 
@@ -13,26 +34,42 @@ A **TypeScript** + **Playwright** UI test automation framework with:
 
 ```
 playwright-ai-automation-framework/
+├── .github/
+│   └── workflows/
+│       └── ci.yml                    # GitHub Actions workflow
 ├── src/
+│   ├── ai/
+│   │   ├── bugReportAssistant.ts     # AI bug report generator (+ LLM integration)
+│   │   ├── llmClient.ts              # OpenAI client wrapper
+│   │   └── testGenerator.ts          # Test case generator (scaffold)
 │   ├── core/
-│   │   ├── BaseService.ts       # Base class for services
-│   │   ├── Logger.ts            # Logger utility
-│   │   └── UserService.ts       # Example service (User management)
+│   │   ├── BaseService.ts            # Base class for services
+│   │   ├── Logger.ts                 # Logger utility
+│   │   └── UserService.ts            # Example service
 │   ├── models/
-│   │   └── User.ts              # User model/domain entity
+│   │   └── User.ts                   # User domain model
 │   ├── pages/
-│   │   ├── BasePage.ts          # Base page object
-│   │   └── HomePage.ts          # Home page object
+│   │   ├── BasePage.ts               # Base page object
+│   │   ├── HomePage.ts               # Home page POM
+│   │   ├── LoginPage.ts              # SauceDemo login page POM
+│   │   └── ProductsPage.ts           # SauceDemo products page POM
 │   ├── utils/
-│   │   └── mathUtils.ts         # Utility functions (generics example)
-│   ├── index.ts                 # Main entry point
-│   └── test.ts                  # Simple TS test file
+│   │   └── mathUtils.ts              # Utility functions (generics example)
+│   ├── index.ts                      # Main entry point
+│   └── test.ts                       # Simple TS test file
 ├── tests/
-│   └── example.spec.ts          # Playwright test example (using POM)
-├── playwright.config.ts         # Playwright configuration
-├── tsconfig.json                # TypeScript configuration
-├── package.json                 # Dependencies & scripts
-└── README.md                    # This file
+│   ├── example.spec.ts               # Example test (Playwright.dev)
+│   ├── login.spec.ts                 # SauceDemo login tests (with AI fixtures)
+│   └── fixtures/
+│       └── ai-fixtures.ts            # Custom test fixtures + AI hook
+├── artifacts/
+│   └── bug-reports.json              # Generated AI bug reports (auto-created)
+├── .env                              # Environment config (local only)
+├── .gitignore                        # Git ignore rules
+├── playwright.config.ts              # Playwright configuration
+├── tsconfig.json                     # TypeScript configuration
+├── package.json                      # Dependencies & scripts
+└── README.md                         # This file
 ```
 
 ---
@@ -42,6 +79,7 @@ playwright-ai-automation-framework/
 ### Prerequisites
 - **Node.js** 16+ (check: `node --version`)
 - **npm** 8+ (check: `npm --version`)
+- **OpenAI API Key** (for AI features) — get at [platform.openai.com](https://platform.openai.com)
 
 ### Installation
 
@@ -55,13 +93,30 @@ npm install
 
 # Install Playwright browsers
 npx playwright install
+
+# Set your OpenAI API key
+# Edit .env and add your key:
+# OPENAI_API_KEY=sk-your-key-here
 ```
+
+---
+
+## 🔑 Environment Setup
+
+Create a `.env` file in the project root:
+
+```bash
+OPENAI_API_KEY=sk-your-openai-api-key-here
+```
+
+**⚠️ Never commit `.env` to git** — it's already in `.gitignore`.
 
 ---
 
 ## 📚 Available Commands
 
 ### Run Tests
+
 ```bash
 # Run all tests
 npx playwright test
@@ -70,7 +125,7 @@ npx playwright test
 npx playwright test --headed
 
 # Run tests for a specific file
-npx playwright test tests/example.spec.ts
+npx playwright test tests/login.spec.ts
 
 # Run tests with a specific browser
 npx playwright test --project=chromium
@@ -83,10 +138,14 @@ npx playwright test --debug
 npx playwright test --ui
 ```
 
-### View Test Reports
+### View Reports
+
 ```bash
 # Open HTML report from last test run
 npx playwright show-report
+
+# View AI-generated bug reports (JSON)
+cat artifacts/bug-reports.json
 ```
 
 ### Development
@@ -107,28 +166,28 @@ npx ts-node src/test.ts
 ## 🏗️ Architecture
 
 ### Page Object Model (POM)
-Tests use the **Page Object Model** pattern for cleaner, more maintainable code:
+
+Tests use the **Page Object Model** pattern for cleaner, maintainable code:
 
 **Example:**
 ```typescript
-// src/pages/HomePage.ts
-export class HomePage extends BasePage {
-  async open() {
-    await this.goto('/');
-  }
-
-  async clickGetStarted() {
-    await this.startedLink.click();
+// src/pages/LoginPage.ts
+export class LoginPage extends BasePage {
+  async login(username: string, password: string) {
+    await this.usernameInput.fill(username);
+    await this.passwordInput.fill(password);
+    await this.loginButton.click();
   }
 }
 
-// tests/example.spec.ts
-const homePage = new HomePage(page);
-await homePage.open();
-await homePage.clickGetStarted();
+// tests/login.spec.ts
+import { test } from './fixtures/ai-fixtures';
+const loginPage = new LoginPage(page);
+await loginPage.login('user', 'pass');
 ```
 
 ### Services & Models
+
 **OOP architecture** for business logic:
 - `UserService` — manages users
 - `User` — domain model
@@ -141,16 +200,73 @@ const userService = new UserService();
 const user = userService.createUser('test@example.com', 'QA Engineer', ['ADMIN']);
 ```
 
+### AI Integration
+
+**Auto-generate bug reports from failed tests:**
+
+```typescript
+import { test, expect } from './fixtures/ai-fixtures';
+
+test('my test', async ({ page, bugReportAssistant }) => {
+  // Your test code...
+  // If test fails, AI fixture auto-generates a bug report
+  // Report saved to artifacts/bug-reports.json
+});
+```
+
+**How it works:**
+1. Test fails
+2. `ai-fixtures.ts` catches the failure in `afterEach` hook
+3. `BugReportAssistant` calls `LlmClient` (OpenAI API)
+4. LLM generates structured bug report (title, description, severity, steps)
+5. Report saved to `artifacts/bug-reports.json` with timestamp
+
+---
+
+## 🧪 Test Examples
+
+### SauceDemo Login Tests
+
+**File:** `tests/login.spec.ts`
+
+```typescript
+import { test, expect } from './fixtures/ai-fixtures';
+import { LoginPage } from '../src/pages/LoginPage';
+import { ProductsPage } from '../src/pages/ProductsPage';
+
+test.describe('Login functionality', () => {
+  test('should allow a standard user to login', async ({ page }) => {
+    const loginPage = new LoginPage(page);
+    const productsPage = new ProductsPage(page);
+
+    await loginPage.open();
+    await loginPage.login('standard_user', 'secret_sauce');
+
+    await expect(page).toHaveURL(/.*inventory.html/);
+    await expect(productsPage.pageTitle).toBeVisible();
+  });
+
+  test('should show error for locked out user', async ({ page }) => {
+    const loginPage = new LoginPage(page);
+
+    await loginPage.open();
+    await loginPage.login('locked_out_user', 'secret_sauce');
+
+    await expect(loginPage.errorMessage).toBeVisible();
+  });
+});
+```
+
 ---
 
 ## 🔧 Configuration
 
 ### Playwright Config (`playwright.config.ts`)
+- **Base URL**: https://www.saucedemo.com/ (SauceDemo)
 - **Timeout**: 30 seconds per test
 - **Retries**: 0 locally, 2 in CI
 - **Parallel**: Enabled
 - **Browsers**: Chromium, Firefox
-- **Base URL**: https://playwright.dev
 - **Reporter**: List + HTML
 - **Screenshot**: On failure
 - **Video**: On failure
@@ -163,26 +279,9 @@ const user = userService.createUser('test@example.com', 'QA Engineer', ['ADMIN']
 - **Source maps**: Enabled
 - **Declaration files**: Enabled
 
----
-
-## 🧪 Example Test
-
-**File:** `tests/example.spec.ts`
-
-```typescript
-import { test, expect } from '@playwright/test';
-import { HomePage } from '../src/pages/HomePage';
-
-test('homepage via POM: title and get started link', async ({ page }) => {
-  const homePage = new HomePage(page);
-
-  await homePage.open();
-  await expect(page).toHaveTitle(/Playwright/);
-  await expect(homePage.startedLink).toBeVisible();
-
-  await homePage.clickGetStarted();
-  await expect(page).toHaveURL(/.*docs/);
-});
+### OpenAI Config (`.env`)
+```
+OPENAI_API_KEY=sk-your-key-here
 ```
 
 ---
@@ -193,19 +292,19 @@ test('homepage via POM: title and get started link', async ({ page }) => {
    ```typescript
    export class MyPage extends BasePage {
      async openPage() { await this.goto('/my-page'); }
-     // Add methods for interactions...
+     async clickButton() { await this.page.locator('button').click(); }
    }
    ```
 
-2. **Create a Test** in `tests/`:
+2. **Create a Test** in `tests/` using AI fixtures:
    ```typescript
-   import { test, expect } from '@playwright/test';
+   import { test, expect } from './fixtures/ai-fixtures';
    import { MyPage } from '../src/pages/MyPage';
 
    test('my test', async ({ page }) => {
      const myPage = new MyPage(page);
      await myPage.openPage();
-     // Add assertions...
+     // If fails, AI auto-generates bug report
    });
    ```
 
@@ -213,11 +312,68 @@ test('homepage via POM: title and get started link', async ({ page }) => {
 
 ## 🚦 CI/CD Integration
 
-**GitHub Actions** (upcoming):
-- Automatically run tests on push/PR
-- Generate HTML reports
-- Run tests in parallel with 2 workers
-- Retries enabled (2)
+### GitHub Actions Workflow (`.github/workflows/ci.yml`)
+
+Automatically:
+- ✅ Runs on every push & PR to `main`/`master`
+- ✅ Installs Node.js 20 + dependencies
+- ✅ Installs Playwright browsers
+- ✅ Runs tests with `CI=true` env var
+- ✅ Uploads Playwright HTML report
+- ✅ Uploads AI bug reports (if any)
+
+**View artifacts:**
+1. Go to GitHub Actions → Latest workflow run
+2. Download `playwright-report` or `ai-bug-reports`
+
+---
+
+## 🤖 AI Features (Powered by OpenAI)
+
+### BugReportAssistant
+
+Generates structured bug reports from failed test runs:
+
+```typescript
+const assistant = new BugReportAssistant();
+const bugDraft = await assistant.generateBugReportDraft({
+  testName: 'Login test',
+  errorMessage: 'Login button not found',
+  stackTrace: '...',
+  url: 'https://www.saucedemo.com/',
+});
+
+// Result:
+{
+  title: '[Bug] Login button not responding',
+  description: 'User unable to click login button...',
+  stepsToReproduce: ['1. Navigate to login page', ...],
+  expectedResult: 'Login should succeed',
+  actualResult: 'Button not clickable',
+  severity: 'High',
+  environment: 'Browser: Chromium/Firefox, OS: Windows'
+}
+```
+
+### LlmClient
+
+Wrapper around OpenAI API for easy LLM calls:
+
+```typescript
+const llm = new LlmClient(process.env.OPENAI_API_KEY);
+const response = await llm.generateText(
+  'You are a QA expert...',
+  'Generate test cases for login flow'
+);
+```
+
+### TestGenerator (Scaffold)
+
+Placeholder for future AI test generation:
+```typescript
+const generator = new TestGenerator();
+const testCases = await generator.generateTestCases('Login functionality');
+```
 
 ---
 
@@ -225,24 +381,45 @@ test('homepage via POM: title and get started link', async ({ page }) => {
 
 ### Main
 - `@playwright/test` — Playwright test framework
+- `openai` — OpenAI API client
 
 ### Dev
 - `typescript` — TypeScript compiler
 - `ts-node` — Run TypeScript directly
 
-Check `package.json` for all dependencies.
+Check `package.json` for all dependencies and versions.
 
 ---
 
 ## 🔮 Upcoming Features
 
-- [ ] AI test case generator (from feature descriptions)
-- [ ] AI bug report generator (from failed test runs)
-- [ ] GitHub Actions CI pipeline
+- [ ] TestGenerator: AI-powered test case generation from feature descriptions
 - [ ] API client service (for backend testing)
 - [ ] Database fixtures & seeding
 - [ ] Test data management
 - [ ] Performance metrics collection
+- [ ] Slack integration for bug reports
+- [ ] Jira ticket auto-creation from bug reports
+- [ ] Advanced trace analysis
+
+---
+
+## 🐛 Troubleshooting
+
+### OpenAI API Key not working
+- Verify key is in `.env`: `OPENAI_API_KEY=sk-...`
+- Check key has API access at [platform.openai.com](https://platform.openai.com)
+- Ensure key is not expired or has sufficient credits
+
+### Tests timeout
+- Increase timeout in `playwright.config.ts` → `timeout`
+- Check internet connection for SauceDemo access
+- Run with `--headed` to see what's happening
+
+### AI bug reports not generating
+- Ensure `.env` has valid OpenAI API key
+- Check network connectivity
+- Check OpenAI API status at [status.openai.com](https://status.openai.com)
 
 ---
 
@@ -252,6 +429,8 @@ Check `package.json` for all dependencies.
 - [Playwright Test Framework](https://playwright.dev/docs/intro)
 - [Page Object Model Best Practices](https://playwright.dev/docs/pom)
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/)
+- [OpenAI API Documentation](https://platform.openai.com/docs)
+- [SauceDemo Testing Sandbox](https://www.saucedemo.com/)
 
 ---
 
@@ -267,4 +446,4 @@ MIT
 
 ---
 
-**Happy Testing! 🎭**
+**Happy Testing! 🎭✨**
