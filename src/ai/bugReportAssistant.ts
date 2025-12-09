@@ -50,7 +50,30 @@ export class BugReportAssistant {
         Generate a bug report draft.
         `;
 
-    const raw = await this.llm.generateText(systemPrompt, userPrompt);
+    let raw: string;
+    try {
+      raw = await this.llm.generateText(systemPrompt, userPrompt);
+    } catch (err: any) {
+      const msg = (err && err.message) ? err.message : String(err);
+      // Якщо відсутні креденшіали OpenAI — логувати та повернути безпечний драфт
+      if (msg.includes('Missing credentials') || msg.includes('OPENAI_API_KEY')) {
+        console.error(`[AI] OpenAI credentials missing: ${msg}`);
+        const fallback: BugReportDraft = {
+          title: `[Agent] Failed test: ${info.testName}`,
+          description: `AI bug report generation skipped because OpenAI credentials are not configured. Original error: ${msg}`,
+          stepsToReproduce: info.steps ?? [],
+          expectedResult: 'Test scenario should complete without errors.',
+          actualResult: info.errorMessage,
+          severity: 'Low',
+          environment: 'Browser: Playwright (credentials missing for AI generation)',
+        };
+        return fallback;
+      }
+
+      // Інші помилки — логувати, але не кидати далі
+      console.error('[AI] Error while generating text from LLM:', err);
+      raw = `Error generating AI report: ${msg}`;
+    }
 
     let parsed: any;
     try {
@@ -60,7 +83,7 @@ export class BugReportAssistant {
     } catch {
       // fallback – якщо JSON не розпарсили
       parsed = {
-        title: `[Agent] Failed test: ${info.testName}`, // <-- Змінено тут
+        title: `[Agent] Failed test: ${info.testName}`,
         description: raw,
         stepsToReproduce: info.steps ?? [],
         expectedResult: 'Test scenario should complete without errors.',
