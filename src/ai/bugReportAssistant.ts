@@ -1,18 +1,16 @@
 // src/ai/bugReportAssistant.ts
-// Тут буде логіка для формування чернетки баг-репорту
-// на основі інформації про падіння тесту.
 
-interface FailedTestInfo {
+export interface FailedTestInfo {
   testName: string;
   errorMessage: string;
   stackTrace: string;
   screenshotPath?: string;
   videoPath?: string;
   url?: string;
-  steps?: string[]; // Кроки, які призвели до падіння
+  steps?: string[]; // manual steps, optional
 }
 
-interface BugReportDraft {
+export interface BugReportDraft {
   title: string;
   description: string;
   stepsToReproduce: string[];
@@ -25,18 +23,19 @@ interface BugReportDraft {
 
 export class BugReportAssistant {
   async generateBugReportDraft(info: FailedTestInfo): Promise<BugReportDraft> {
-    console.log(`[AI] Generating bug report draft for failed test: ${info.testName}`);
-    // Тут буде виклик LLM API
-    // Наразі повертаємо заглушку
+    // Пізніше тут буде виклик LLM API, поки — розумна заглушка
     return {
       title: `[Bug] Failed test: ${info.testName}`,
-      description: `Test failed with error: ${info.errorMessage}`,
-      stepsToReproduce: info.steps || ['1. Go to URL', '2. Perform actions that led to failure'],
-      expectedResult: 'Test should pass without errors.',
+      description: `Automated test "${info.testName}" failed.\n\nError: ${info.errorMessage}`,
+      stepsToReproduce:
+        info.steps ?? ['1. Run automated test', '2. Observe failure details in logs / trace.'],
+      expectedResult: 'Test scenario should complete without errors.',
       actualResult: `Test failed with error: ${info.errorMessage}\nStack: ${info.stackTrace}`,
       severity: 'Medium',
-      environment: 'Browser: Chromium, OS: Windows', // Це можна буде брати з Playwright context
-      attachments: info.screenshotPath ? [info.screenshotPath] : [],
+      environment: 'Browser: Chromium/Firefox (Playwright), OS: Windows',
+      attachments: [info.screenshotPath, info.videoPath].filter(
+        (x): x is string => Boolean(x),
+      ),
     };
   }
 }

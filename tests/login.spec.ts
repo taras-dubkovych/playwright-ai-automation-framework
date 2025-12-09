@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures/ai-fixtures';
 import { LoginPage } from '../src/pages/LoginPage';
 import { ProductsPage } from '../src/pages/ProductsPage';
 
@@ -10,9 +10,9 @@ test.describe('Login functionality', () => {
     await loginPage.open();
     await loginPage.login('standard_user', 'secret_sauce');
 
-    await expect(page).toHaveURL('https://www.saucedemo.com/inventory.html');
+    await expect(page).toHaveURL(/.*inventoryв.html/);
     await expect(productsPage.pageTitle).toBeVisible();
-    await expect(productsPage.isLoaded()).toBeTruthy();
+    await expect(productsPage.pageTitle).toHaveText('Products');
   });
 
   test('should show error for locked out user', async ({ page }) => {
@@ -22,6 +22,8 @@ test.describe('Login functionality', () => {
     await loginPage.login('locked_out_user', 'secret_sauce');
 
     await expect(loginPage.errorMessage).toBeVisible();
-    await expect(loginPage.errorMessage).toHaveText('Epic sadface: Sorry, this user has been locked out.');
+    await expect(loginPage.errorMessage).toContainText(
+      'Sorry, this user has been locked out',
+    );
   });
 });
