@@ -10,7 +10,7 @@ test.describe('Login functionality', () => {
     await loginPage.open();
     await loginPage.login('standard_user', 'secret_sauce');
 
-    await expect(page).toHaveURL(/.*inventoryr.html/);
+    await expect(page).toHaveURL(/.*inventory.html/);
     await expect(productsPage.pageTitle).toBeVisible();
     await expect(productsPage.pageTitle).toHaveText('Products');
   });
