@@ -30,6 +30,7 @@ jobs:
         run: npx playwright test
         env:
           CI: true
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Upload Playwright report
         if: always()
